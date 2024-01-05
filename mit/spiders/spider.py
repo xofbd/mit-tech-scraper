@@ -8,13 +8,13 @@ class MITSpider(Spider):
     name = "tech"
 
     def start_requests(self):
-        url_base = "https://tlo.mit.edu/technologies?"
+        url_base = "https://tlo.mit.edu/industry-entrepreneurs/available-technologies?"
         if not hasattr(self, "search_term"):
             self.search_term = ""
 
-        for page in range(1, LIMIT + 1):
+        for page in range(0, LIMIT + 1):
             query_string = urlencode({
-                "search_api_views_fulltext": self.search_term,
+                "search_api_fulltext": self.search_term,
                 "page": page,
             })
 
@@ -22,22 +22,32 @@ class MITSpider(Spider):
             yield Request(url, self.parse_page_links)
 
     def parse_page_links(self, response):
-        for link in response.css("span.field-content > a"):
+        for link in response.css("div.tech-brief-teaser h3 a"):
             yield response.follow(link, self.parse_tech)
-    
+
     def parse_tech(self, response):
-        inventors = response.css("div.field-name-field-inventors h2 ::text").getall()
-        title = response.css("h1.title#page-title ::text").get()
-        application, problem_addressed = (
-            response.css("section#block-system-main div.field-name-field-body ::text")
-            .getall()[:2]
+        researchers = (
+            response
+            .css("div.tech-brief-details__researchers-list ::text")
+            .get()
+            .split("/")
         )
+        researchers = list(map(str.strip, researchers))
+        title = response.css("h1.tech-brief-header__title ::text").get()
+
+        try:
+            description, problem_addressed = (
+                response.css("div.tech-brief-body__inner p ::text")
+                .getall()[:2]
+            )
+        except ValueError:
+            description = None
+            problem_addressed = None
 
         yield {
-            "inventors": inventors,
             "title": title,
-            "application": application,
+            "researchers": researchers,
+            "description": description,
             "problem_addressed": problem_addressed,
         }
 
-        
