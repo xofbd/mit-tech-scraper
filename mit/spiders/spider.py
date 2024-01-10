@@ -36,18 +36,17 @@ class MITSpider(Spider):
         title = response.css("h1.tech-brief-header__title ::text").get()
 
         try:
-            description, problem_addressed = (
-                response.css("div.tech-brief-body__inner p ::text")
-                .getall()[:2]
+            body = (
+                response
+                .css("div.tech-brief-body__inner *::text")
+                .getall()
             )
         except ValueError:
-            description = None
-            problem_addressed = None
+            body = None
 
         yield {
             "title": title,
             "researchers": researchers,
-            "description": description,
-            "problem_addressed": problem_addressed,
+            "body": body,
         }
 
